@@ -2,58 +2,120 @@
 
 # Assistant personnel
 
-**Tâches, notes, rappels, suivi du sport et du budget, messagerie : tout au même endroit.**
+**Une application web pour organiser son quotidien et communiquer, dans un seul outil.**
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)
-![Statut](https://img.shields.io/badge/statut-en%20d%C3%A9veloppement-orange)
+![Statut](https://img.shields.io/badge/phase-conception%20de%20la%20base%20de%20donn%C3%A9es-orange)
+
+![Projet](https://img.shields.io/badge/projet-NSI%20Terminale-blue)
 
 </div>
 
 ---
 
-## À propos
+## Le projet
 
-Une application web pour organiser son quotidien dans un seul outil : gérer ses tâches, prendre des notes, suivre ses séances de sport et son budget, atteindre ses objectifs et échanger avec d'autres utilisateurs.
+### Le problème
 
-Le projet met l'accent sur une **base de données bien conçue** et sur la **sécurité** des données.
+Au quotidien, on jongle entre plusieurs applications : une pour les listes de tâches, une pour les notes, une autre pour le sport, une autre pour le budget, et encore une autre pour discuter. Les informations sont dispersées et rien n'est relié.
 
-## Fonctionnalités
+### L'idée
 
-| Module | Description | Statut |
-|---|---|---|
-| Comptes | Inscription, connexion, mots de passe hachés | À venir |
-| Tâches | Priorité, échéance, catégories, filtres | À venir |
-| Notes | Recherche, tags, notes privées | À venir |
-| Rappels | Alertes datées sur la page d'accueil | À venir |
-| Sport | Séances, distances, graphiques de progression | À venir |
-| Budget | Revenus, dépenses, totaux par catégorie | À venir |
-| Objectifs | Suivi en pourcentage, points et niveaux | À venir |
-| Messagerie | Contacts, conversations, lu / non lu | À venir |
-| Tableau de bord | Vue d'ensemble de tous les modules | À venir |
+Créer **un assistant personnel unique**, sous forme d'application web, qui regroupe tout au même endroit. Chaque utilisateur se connecte avec son compte et retrouve son espace personnel :
 
-## Base de données
+- **Organiser sa journée** : tâches avec priorité et échéance, notes classées par tags, rappels datés.
 
-Le schéma complet est dans [`schema.sql`](schema.sql).
+- **Suivre sa progression** : séances de sport, revenus et dépenses, objectifs chiffrés avec avancement en pourcentage.
+
+- **Rester motivé** : un système de points et de niveaux récompense les objectifs atteints.
+
+- **Communiquer** : les utilisateurs peuvent s'ajouter en contacts et s'envoyer des messages.
+
+- **Tout voir d'un coup d'œil** : un tableau de bord rassemble les tâches du jour, les prochains rappels et les graphiques de suivi.
+
+## La base de données
+
+Le schéma complet est écrit en SQL dans [`schema.sql`](schema.sql). Il contient **9 tables** :
+
+| Table | Rôle |
+
+|---|---|
+
+| `utilisateurs` | Comptes : pseudo, mot de passe haché, points et niveau |
+
+| `taches` | Tâches avec titre, catégorie, priorité (1 à 3), échéance et état |
+
+| `notes` | Notes avec tags, option « privée », dates de création et de modification |
+
+| `rappels` | Rappels avec texte, date et heure, et état fait / non fait |
+
+| `objectifs` | Objectifs avec valeur cible, valeur actuelle, unité et points à gagner |
+
+| `seances_sport` | Séances avec type, durée et distance |
+
+| `transactions` | Revenus (montant positif) et dépenses (montant négatif) par catégorie |
+
+| `contacts` | Demandes de contact entre utilisateurs, avec statut (en attente, accepté, refusé) |
+
+| `messages` | Messages avec expéditeur, destinataire, date et état lu / non lu |
+
+### Relations
+
+Toutes les tables sont rattachées à l'utilisateur : chaque donnée appartient à un compte.
 
 ```mermaid
+
 erDiagram
+
     UTILISATEURS ||--o{ TACHES : possede
+
     UTILISATEURS ||--o{ NOTES : ecrit
+
     UTILISATEURS ||--o{ RAPPELS : programme
+
     UTILISATEURS ||--o{ OBJECTIFS : fixe
+
     UTILISATEURS ||--o{ SEANCES_SPORT : enregistre
+
     UTILISATEURS ||--o{ TRANSACTIONS : saisit
+
     UTILISATEURS ||--o{ CONTACTS : demande
+
     UTILISATEURS ||--o{ MESSAGES : envoie
+
 ```
 
-Chaque table est liée à `utilisateurs` par une clé étrangère. Des contraintes `CHECK` garantissent la validité des données, et des index accélèrent les requêtes fréquentes.
+### Choix de conception
 
-## Sécurité
+- **Clés étrangères avec suppression en cascade** : si un compte est supprimé, toutes ses données le sont aussi, sans laisser de données orphelines.
 
-- Mots de passe hachés et salés (bcrypt)
-- Requêtes SQL paramétrées contre les injections
-- Chaque utilisateur n'accède qu'à ses propres données et conversations
-- Chiffrement des notes privées, puis chiffrement de bout en bout des messages (prévu)
+- **Contraintes de validité** (`CHECK`) : la priorité d'une tâche est comprise entre 1 et 3, un utilisateur ne peut pas s'envoyer un message ni se demander lui-même en contact, les états ne prennent que les valeurs prévues.
+
+- **Unicité** : un pseudo est unique, et une même demande de contact ne peut pas être faite deux fois.
+
+- **Index** : les requêtes les plus fréquentes (messages d'une conversation, rappels à venir, tâches par échéance) sont accélérées.
+
+- **Mots de passe** : seul le hash est stocké, jamais le mot de passe en clair.
+
+### Exemples de requêtes prévues
+
+- Afficher les tâches du jour non terminées d'un utilisateur.
+
+- Calculer les dépenses du mois par catégorie.
+
+- Récupérer la conversation entre deux utilisateurs, dans l'ordre chronologique.
+
+- Compter les messages non lus d'un utilisateur.
+
+Ces requêtes sont écrites à la fin du fichier [`schema.sql`](schema.sql).
+
+## Prochaines étapes
+
+1. Créer les comptes utilisateurs avec une connexion sécurisée.
+
+2. Développer les modules de base : tâches, notes, rappels.
+
+3. Ajouter le suivi du sport, du budget et des objectifs.
+
+4. Construire la messagerie et le tableau de bord.
+
+5. Ajouter le chiffrement des notes privées et des messages.
